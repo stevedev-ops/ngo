@@ -1,7 +1,52 @@
-import React from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { useContent } from '../context/ContentContext';
+import { useWishlist } from '../context/WishlistContext';
+import { useCart } from '../context/CartContext';
+import toast from 'react-hot-toast';
 
 const Shop = () => {
+    const { allProducts, categories } = useContent();
+    const { addToCart } = useCart();
+    const { isInWishlist, addToWishlist, removeFromWishlist, wishlistItems } = useWishlist();
+    const [filter, setFilter] = useState('All');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [minPrice, setMinPrice] = useState('');
+    const [maxPrice, setMaxPrice] = useState('');
+
+    // Filter products
+    const products = useMemo(() => {
+        return allProducts;
+    }, [allProducts]);
+
+    const filteredProducts = useMemo(() => {
+        if (!products) return [];
+        return products.filter(product => {
+            // 1. Category Filter
+            const matchesCategory = filter === 'All' || product.category === filter;
+
+            // 2. Search Filter (Name or Description)
+            const query = searchQuery.toLowerCase();
+            const matchesSearch = product.name.toLowerCase().includes(query) ||
+                product.description.toLowerCase().includes(query);
+
+            // 3. Price Range Filter
+            const price = product.price;
+            const min = minPrice !== '' ? parseFloat(minPrice) : 0;
+            const max = maxPrice !== '' ? parseFloat(maxPrice) : Infinity;
+            const matchesPrice = price >= min && price <= max;
+
+            return matchesCategory && matchesSearch && matchesPrice;
+        });
+    }, [filter, searchQuery, minPrice, maxPrice, products]);
+
+    const handleClearFilters = () => {
+        setFilter('All');
+        setSearchQuery('');
+        setMinPrice('');
+        setMaxPrice('');
+    };
+
     return (
         <div className="w-full">
             <section className="relative">
@@ -19,170 +64,188 @@ const Shop = () => {
             </section>
             <div className="flex-grow layout-container w-full max-w-[1440px] mx-auto px-4 md:px-8 lg:px-12 py-8 lg:py-12">
                 <div className="flex flex-col lg:flex-row gap-8 xl:gap-12">
-                    <aside className="w-full lg:w-64 flex-shrink-0 space-y-8">
+                    <aside className="w-full lg:w-72 flex-shrink-0 space-y-8">
+                        {/* Search Section */}
                         <div>
                             <h2 className="text-lg font-bold leading-tight tracking-[-0.015em] pb-4 border-b border-border-light dark:border-border-dark mb-4 text-gray-900 dark:text-white">
-                                Categories</h2>
-                            <ul className="space-y-3">
-                                <li>
-                                    <label className="flex items-center gap-3 cursor-pointer group">
-                                        <input defaultChecked className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary dark:bg-background-dark dark:border-gray-600" type="checkbox" />
-                                        <span className="text-sm font-medium group-hover:text-primary transition-colors text-gray-700 dark:text-gray-300">All Products</span>
-                                    </label>
-                                </li>
-                                <li>
-                                    <label className="flex items-center gap-3 cursor-pointer group">
-                                        <input className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary dark:bg-background-dark dark:border-gray-600" type="checkbox" />
-                                        <span className="text-sm font-medium group-hover:text-primary transition-colors text-gray-700 dark:text-gray-300">Handmade Crafts</span>
-                                    </label>
-                                </li>
-                                <li>
-                                    <label className="flex items-center gap-3 cursor-pointer group">
-                                        <input className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary dark:bg-background-dark dark:border-gray-600" type="checkbox" />
-                                        <span className="text-sm font-medium group-hover:text-primary transition-colors text-gray-700 dark:text-gray-300">Sustainable Apparel</span>
-                                    </label>
-                                </li>
-                                <li>
-                                    <label className="flex items-center gap-3 cursor-pointer group">
-                                        <input className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary dark:bg-background-dark dark:border-gray-600" type="checkbox" />
-                                        <span className="text-sm font-medium group-hover:text-primary transition-colors text-gray-700 dark:text-gray-300">Education Kits</span>
-                                    </label>
-                                </li>
-                                <li>
-                                    <label className="flex items-center gap-3 cursor-pointer group">
-                                        <input className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary dark:bg-background-dark dark:border-gray-600" type="checkbox" />
-                                        <span className="text-sm font-medium group-hover:text-primary transition-colors text-gray-700 dark:text-gray-300">Virtual Gifts</span>
-                                    </label>
-                                </li>
-                            </ul>
-                        </div>
-                        <div>
-                            <h2 className="text-lg font-bold leading-tight tracking-[-0.015em] pb-4 border-b border-border-light dark:border-border-dark mb-4 text-gray-900 dark:text-white">
-                                Price Range</h2>
-                            <div className="flex items-center gap-4">
-                                <input className="w-full rounded-lg bg-surface-light dark:bg-surface-dark border border-gray-200 dark:border-gray-700 py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none dark:bg-gray-800 dark:text-white" placeholder="Min" type="number" />
-                                <span className="text-text-muted-light dark:text-gray-400">-</span>
-                                <input className="w-full rounded-lg bg-surface-light dark:bg-surface-dark border border-gray-200 dark:border-gray-700 py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none dark:bg-gray-800 dark:text-white" placeholder="Max" type="number" />
+                                Search
+                            </h2>
+                            <div className="relative">
+                                <input
+                                    type="text"
+                                    placeholder="Search products..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-primary outline-none"
+                                />
+                                <span className="material-symbols-outlined absolute left-3 top-2.5 text-gray-400">search</span>
                             </div>
                         </div>
+
+                        {/* Price Range Section */}
                         <div>
                             <h2 className="text-lg font-bold leading-tight tracking-[-0.015em] pb-4 border-b border-border-light dark:border-border-dark mb-4 text-gray-900 dark:text-white">
-                                Impact Goal</h2>
+                                Price Range
+                            </h2>
+                            <div className="flex items-center gap-2 mb-4">
+                                <div className="space-y-1 flex-1">
+                                    <label className="text-xs font-bold text-gray-500 uppercase">Min</label>
+                                    <div className="relative">
+                                        <span className="absolute left-3 top-2 text-gray-400 text-sm">$</span>
+                                        <input
+                                            type="number"
+                                            placeholder="0"
+                                            value={minPrice}
+                                            onChange={(e) => setMinPrice(e.target.value)}
+                                            className="w-full pl-6 pr-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-primary outline-none"
+                                        />
+                                    </div>
+                                </div>
+                                <span className="text-gray-400 mt-5">-</span>
+                                <div className="space-y-1 flex-1">
+                                    <label className="text-xs font-bold text-gray-500 uppercase">Max</label>
+                                    <div className="relative">
+                                        <span className="absolute left-3 top-2 text-gray-400 text-sm">$</span>
+                                        <input
+                                            type="number"
+                                            placeholder="Max"
+                                            value={maxPrice}
+                                            onChange={(e) => setMaxPrice(e.target.value)}
+                                            className="w-full pl-6 pr-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-primary outline-none"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Categories Section */}
+                        <div>
+                            <h2 className="text-lg font-bold leading-tight tracking-[-0.015em] pb-4 border-b border-border-light dark:border-border-dark mb-4 text-gray-900 dark:text-white">
+                                Categories
+                            </h2>
                             <ul className="space-y-3">
-                                <li>
-                                    <label className="flex items-center gap-3 cursor-pointer group">
-                                        <input className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary dark:bg-background-dark dark:border-gray-600" type="checkbox" />
-                                        <span className="text-sm font-medium group-hover:text-primary transition-colors text-gray-700 dark:text-gray-300">Supports Education</span>
-                                    </label>
-                                </li>
-                                <li>
-                                    <label className="flex items-center gap-3 cursor-pointer group">
-                                        <input className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary dark:bg-background-dark dark:border-gray-600" type="checkbox" />
-                                        <span className="text-sm font-medium group-hover:text-primary transition-colors text-gray-700 dark:text-gray-300">Eco-Friendly</span>
-                                    </label>
-                                </li>
-                                <li>
-                                    <label className="flex items-center gap-3 cursor-pointer group">
-                                        <input className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary dark:bg-background-dark dark:border-gray-600" type="checkbox" />
-                                        <span className="text-sm font-medium group-hover:text-primary transition-colors text-gray-700 dark:text-gray-300">Women Empowerment</span>
-                                    </label>
-                                </li>
+                                {['All', 'Handmade Crafts', 'Sustainable Apparel', 'Jewelry', 'Eco-Friendly'].map(cat => (
+                                    <li key={cat}>
+                                        <label className="flex items-center gap-3 cursor-pointer group">
+                                            <input
+                                                type="checkbox"
+                                                checked={filter === cat}
+                                                onChange={() => setFilter(cat)}
+                                                className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary dark:bg-background-dark dark:border-gray-600"
+                                            />
+                                            <span className={`text-sm font-medium transition-colors ${filter === cat ? 'text-primary' : 'text-gray-700 dark:text-gray-300'} group-hover:text-primary`}>
+                                                {cat === 'All' ? 'All Products' : cat}
+                                            </span>
+                                        </label>
+                                    </li>
+                                ))}
                             </ul>
                         </div>
+
+                        <button
+                            onClick={handleClearFilters}
+                            className="w-full py-2.5 text-sm font-bold text-gray-600 dark:text-gray-300 hover:text-primary border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors flex items-center justify-center gap-2">
+                            <span className="material-symbols-outlined text-lg">filter_alt_off</span>
+                            Reset Filters
+                        </button>
                     </aside>
                     <main className="flex-1 flex flex-col gap-6">
                         <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-surface-light dark:bg-surface-dark p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-                            <label className="flex w-full md:max-w-md items-center gap-2 rounded-lg bg-background-light dark:bg-background-dark px-3 py-2 border border-transparent focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all bg-gray-50 dark:bg-gray-900">
-                                <span className="material-symbols-outlined text-text-muted-light dark:text-gray-400">search</span>
-                                <input className="w-full bg-transparent border-none p-0 text-sm focus:ring-0 placeholder:text-text-muted-light dark:placeholder:text-gray-500 text-text-main-light dark:text-white" placeholder="Search for crafts, apparel, and more..." />
-                            </label>
-                            <div className="flex items-center gap-3 w-full md:w-auto">
-                                <span className="text-sm font-medium whitespace-nowrap text-text-muted-light dark:text-gray-400 hidden md:block">Sort by:</span>
-                                <div className="relative w-full md:w-48">
-                                    <select className="w-full appearance-none rounded-lg bg-background-light dark:bg-background-dark border-none py-2 pl-3 pr-10 text-sm font-medium focus:ring-1 focus:ring-primary cursor-pointer text-text-main-light dark:text-white bg-gray-50 dark:bg-gray-900">
-                                        <option>Relevance</option>
-                                        <option>Price: Low to High</option>
-                                        <option>Price: High to Low</option>
-                                        <option>Newest Arrivals</option>
-                                    </select>
-                                    <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-text-muted-light text-lg">expand_more</span>
-                                </div>
-                            </div>
+                            <p className="text-sm text-gray-500 font-medium">
+                                Showing {filteredProducts.length} result{filteredProducts.length !== 1 ? 's' : ''}
+                            </p>
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                            <Link to="/product" className="group flex flex-col bg-surface-light dark:bg-surface-dark rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 border border-border-light dark:border-border-dark bg-white dark:bg-gray-800">
-                                <div className="relative aspect-square overflow-hidden bg-gray-100 dark:bg-gray-800">
-                                    <img className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105 saturate-[0.8] group-hover:saturate-100" data-alt="Handwoven basket with intricate colorful patterns" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDcGOfwzn2lLP0O9xpdkKhevvV2An0zVzIRbgX6LKTTOeK0uG8wRpHM1BB-67hO4FKMol1T1xc8U8kOqiHubqQgf_2AB3IFl0qXw_QhZExBC2ANi-621sEA397h59bmwj9UuRvbQQYcZzCB7HwL5nUVmP-_AbdMVxe0LeWMdABazFl6vCUsukazKJC3EpWEKS47BCB6_RvI2ptJPOMzNy1ljfO_m9DFF2fqrWZK2pQ5X5YzvC_hIsYatsMWgNJvuK6yagorNsVhkKk" alt="Artisan Woven Basket" />
-                                    <div className="absolute top-3 left-3">
-                                        <span className="bg-white/90 dark:bg-black/80 backdrop-blur-sm text-text-main-light dark:text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm flex items-center gap-1">
-                                            <span className="material-symbols-outlined text-[14px] text-primary">volunteer_activism</span>
-                                            Fair Trade
-                                        </span>
-                                    </div>
-                                    <button className="absolute bottom-4 right-4 h-10 w-10 bg-primary text-white rounded-full flex items-center justify-center translate-y-14 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 shadow-md hover:scale-110">
-                                        <span className="material-symbols-outlined">add_shopping_cart</span>
-                                    </button>
-                                </div>
-                                <div className="p-4 flex flex-col gap-2 flex-grow">
-                                    <h3 className="text-base font-bold text-text-main-light dark:text-white line-clamp-1">Artisan Woven Basket</h3>
-                                    <p className="text-xs text-text-muted-light dark:text-text-muted-dark line-clamp-1 text-gray-500">Provides income for 3 artisans</p>
-                                    <div className="flex items-center justify-between mt-auto pt-2">
-                                        <span className="text-lg font-bold text-secondary">$45.00</span>
-                                        <div className="flex gap-1 text-yellow-400">
-                                            <span className="material-symbols-outlined text-[16px] fill-current">star</span>
-                                            <span className="material-symbols-outlined text-[16px] fill-current">star</span>
-                                            <span className="material-symbols-outlined text-[16px] fill-current">star</span>
-                                            <span className="material-symbols-outlined text-[16px] fill-current">star</span>
-                                            <span className="material-symbols-outlined text-[16px] fill-current text-gray-300">star</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </Link>
 
-                            {/* Other products (static for now) */}
-                            <div className="group flex flex-col bg-surface-light dark:bg-surface-dark rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 border border-border-light dark:border-border-dark bg-white dark:bg-gray-800">
-                                <div className="relative aspect-square overflow-hidden bg-gray-100 dark:bg-gray-800">
-                                    <img className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105 saturate-[0.8] group-hover:saturate-100" data-alt="Canvas tote bag with minimalist leaf print" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDPS-rXHURKypGuV60zLR1IW1715_lVDf9ZaJC-y5JBy8kTXkWv_0WNW4_QY03-DTbwj8QZqMoGvDNEhVlXMHh2Fl1u0soYKa2-Ilo_RCk1vgaTcW9hNEabaF3FOaD0X7r8pt5uOy3o3CLG4sCJMzPT2ncYsVhnhqOHZ-XN7VrFackHO0ODaP9DOZ1Uuv9Q3qOEdkQrajpNGo7DH78J2FkHrs0ydGyWNRjC0aB8eCqczEBN56wif0HawNawePq_SHoCpS3Cricf188" alt="Organic Tote Bag" />
-                                    <div className="absolute top-3 left-3">
-                                        <span className="bg-white/90 dark:bg-black/80 backdrop-blur-sm text-text-main-light dark:text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm flex items-center gap-1">
-                                            <span className="material-symbols-outlined text-[14px] text-primary">eco</span>
-                                            Eco-Friendly
-                                        </span>
-                                    </div>
-                                    <button className="absolute bottom-4 right-4 h-10 w-10 bg-primary text-white rounded-full flex items-center justify-center translate-y-14 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 shadow-md hover:scale-110">
-                                        <span className="material-symbols-outlined">add_shopping_cart</span>
-                                    </button>
-                                </div>
-                                <div className="p-4 flex flex-col gap-2 flex-grow">
-                                    <h3 className="text-base font-bold text-text-main-light dark:text-white line-clamp-1">Organic Cotton Totebag</h3>
-                                    <p className="text-xs text-text-muted-light dark:text-text-muted-dark line-clamp-1 text-gray-500">Saves 500g of plastic waste</p>
-                                    <div className="flex items-center justify-between mt-auto pt-2">
-                                        <span className="text-lg font-bold text-secondary">$25.00</span>
-                                        <div className="flex gap-1 text-yellow-400">
-                                            <span className="material-symbols-outlined text-[16px] fill-current">star</span>
-                                            <span className="material-symbols-outlined text-[16px] fill-current">star</span>
-                                            <span className="material-symbols-outlined text-[16px] fill-current">star</span>
-                                            <span className="material-symbols-outlined text-[16px] fill-current">star</span>
-                                            <span className="material-symbols-outlined text-[16px] fill-current">star</span>
-                                        </div>
-                                    </div>
-                                </div>
+                        {filteredProducts.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center py-20 text-center">
+                                <span className="material-symbols-outlined text-6xl text-gray-300 mb-4">search_off</span>
+                                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">No products found</h3>
+                                <p className="text-gray-500 max-w-sm">Try adjusting your search or filters to find what you're looking for.</p>
                             </div>
-                            {/* ... more products from legacy HTML could be added here ... */}
-                        </div>
-                        <div className="flex justify-center pt-8">
-                            <nav className="flex gap-2">
-                                <button className="h-10 w-10 rounded-lg flex items-center justify-center border border-gray-200 dark:border-gray-700 bg-surface-light dark:bg-surface-dark hover:bg-background-light dark:hover:bg-background-dark text-text-muted-light dark:text-gray-400 transition-colors bg-white dark:bg-gray-800">
-                                    <span className="material-symbols-outlined">chevron_left</span>
-                                </button>
-                                <button className="h-10 w-10 rounded-lg flex items-center justify-center bg-primary text-white font-bold">1</button>
-                                <button className="h-10 w-10 rounded-lg flex items-center justify-center border border-gray-200 dark:border-gray-700 bg-surface-light dark:bg-surface-dark hover:bg-background-light dark:hover:bg-background-dark text-text-main-light dark:text-white transition-colors bg-white dark:bg-gray-800">2</button>
-                                <button className="h-10 w-10 rounded-lg flex items-center justify-center border border-gray-200 dark:border-gray-700 bg-surface-light dark:bg-surface-dark hover:bg-background-light dark:hover:bg-background-dark text-text-main-light dark:text-white transition-colors bg-white dark:bg-gray-800">3</button>
-                                <button className="h-10 w-10 rounded-lg flex items-center justify-center border border-gray-200 dark:border-gray-700 bg-surface-light dark:bg-surface-dark hover:bg-background-light dark:hover:bg-background-dark text-text-muted-light dark:text-gray-400 transition-colors bg-white dark:bg-gray-800">
-                                    <span className="material-symbols-outlined">chevron_right</span>
-                                </button>
-                            </nav>
-                        </div>
+                        ) : (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {filteredProducts.map(product => (
+                                    <Link to={`/product/${product.id}`} key={product.id} className="group flex flex-col bg-surface-light dark:bg-surface-dark rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 border border-border-light dark:border-border-dark bg-white dark:bg-gray-800">
+                                        <div className="relative aspect-square overflow-hidden bg-gray-100 dark:bg-gray-800">
+                                            {/* Handle JSON parsed images vs potential array issues, though API ensures array */}
+                                            <img className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105 saturate-[0.8] group-hover:saturate-100" src={product.images && product.images[0]} alt={product.name} loading="lazy" />
+                                            {product.stock <= 0 && (
+                                                <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                                                    <span className="text-white font-black text-2xl tracking-wider">OUT OF STOCK</span>
+                                                </div>
+                                            )}
+                                            <div className="absolute top-3 left-3 flex gap-2">
+                                                <span className="bg-white/90 dark:bg-black/80 backdrop-blur-sm text-text-main-light dark:text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm flex items-center gap-1">
+                                                    <span className="material-symbols-outlined text-[14px] text-primary">volunteer_activism</span>
+                                                    Fair Trade
+                                                </span>
+                                                {product.stock <= 0 && (
+                                                    <span className="bg-red-500/90 backdrop-blur-sm text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm">
+                                                        Out of Stock
+                                                    </span>
+                                                )}
+                                            </div>
+                                            {product.stock > 0 && (
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        addToCart(product);
+                                                    }}
+                                                    className="absolute bottom-4 right-4 h-10 w-10 bg-primary text-white rounded-full flex items-center justify-center translate-y-14 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 shadow-md hover:scale-110">
+                                                    <span className="material-symbols-outlined">add_shopping_cart</span>
+                                                </button>
+                                            )}
+                                        </div>
+                                        <div className="p-4 flex flex-col gap-2 flex-grow">
+                                            <h3 className="text-base font-bold text-text-main-light dark:text-white line-clamp-1">{product.name}</h3>
+                                            <p className="text-xs text-text-muted-light dark:text-text-muted-dark line-clamp-1 text-gray-500">{product.impact}</p>
+                                            {product.stock > 0 && product.stock <= 5 && (
+                                                <span className="text-xs font-bold text-orange-600">⚠️ Only {product.stock} left!</span>
+                                            )}
+                                            {product.stock > 5 && product.stock <= 20 && (
+                                                <span className="text-xs text-green-600">✓ In Stock</span>
+                                            )}
+                                            <button
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    const inWishlist = wishlistItems.some(item => item.product_id === product.id);
+                                                    if (inWishlist) {
+                                                        const wishlistItem = wishlistItems.find(item => item.product_id === product.id);
+                                                        removeFromWishlist(wishlistItem.id);
+                                                        toast.success('Removed from wishlist');
+                                                    } else {
+                                                        addToWishlist(product.id);
+                                                        toast.success('Added to wishlist!');
+                                                    }
+                                                }}
+                                                className="absolute bottom-3 right-3 p-2 bg-white dark:bg-gray-800 rounded-full shadow-md hover:scale-110 transition-transform"
+                                            >
+                                                <span className={`material-symbols-outlined ${wishlistItems.some(item => item.product_id === product.id) ? 'text-red-500 fill-current' : 'text-gray-400'}`}>
+                                                    favorite
+                                                </span>
+                                            </button>
+                                            <div className="flex items-center justify-between mt-auto pt-2">
+                                                <div className="flex flex-col">
+                                                    {product.offerPrice ? (
+                                                        <>
+                                                            <span className="text-sm text-gray-400 line-through">${product.price.toFixed(2)}</span>
+                                                            <span className="text-lg font-bold text-red-600">${product.offerPrice.toFixed(2)}</span>
+                                                        </>
+                                                    ) : (
+                                                        <span className="text-lg font-bold text-secondary">${product.price.toFixed(2)}</span>
+                                                    )}
+                                                </div>
+                                                <div className="flex gap-1 text-yellow-400">
+                                                    {[...Array(5)].map((_, i) => (
+                                                        <span key={i} className={`material-symbols-outlined text-[16px] fill-current ${i < Math.floor(product.rating) ? '' : 'text-gray-300'}`}>star</span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </Link>
+                                ))}
+                            </div>
+                        )}
                     </main>
                 </div>
             </div>

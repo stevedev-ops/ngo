@@ -7,6 +7,12 @@ import Donate from './pages/Donate';
 import Shop from './pages/Shop';
 import Product from './pages/Product';
 import Checkout from './pages/Checkout';
+import Programs from './pages/Programs';
+import Contact from './pages/Contact';
+import Gallery from './pages/Gallery';
+import Admin from './pages/Admin';
+import OrderConfirmation from './pages/OrderConfirmation';
+import Wishlist from './pages/Wishlist';
 
 function App() {
   return (
@@ -14,11 +20,17 @@ function App() {
       <Route path="/" element={<Layout />}>
         <Route index element={<Home />} />
         <Route path="about" element={<About />} />
+        <Route path="programs" element={<Programs />} />
+        <Route path="gallery" element={<Gallery />} />
+        <Route path="contact" element={<Contact />} />
         <Route path="donate" element={<Donate />} />
         <Route path="shop" element={<Shop />} />
-        <Route path="product" element={<Product />} />
+        <Route path="product/:id" element={<Product />} />
+        <Route path="wishlist" element={<Wishlist />} />
+        <Route path="admin" element={<Admin />} />
       </Route>
       <Route path="/checkout" element={<Checkout />} />
+      <Route path="/order-confirmation/:orderId" element={<OrderConfirmation />} />
     </Routes>
   );
 }
