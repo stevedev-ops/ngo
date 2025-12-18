@@ -6,17 +6,33 @@ const { logError } = require('./logger');
 const multer = require('multer');
 
 const app = express();
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
+
+// Health check endpoint for Render
+app.get('/health', (req, res) => {
+    res.status(200).json({ status: 'UP', timestamp: new Date().toISOString() });
+});
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+const fs = require('fs');
+
+// Ensure uploads directory exists
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir);
+}
+
 // Configure multer for file uploads with validation
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, 'uploads/');
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        cb(null, uploadDir);
     },
     filename: (req, file, cb) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -446,7 +462,9 @@ app.delete('/api/programs/:id', async (req, res) => {
 app.get('/api/messages', async (req, res) => {
     try {
         const messages = await query("SELECT * FROM messages ORDER BY date DESC");
-        res.json({ message: "success", data: messages });
+        // Convert read to boolean
+        const data = messages.map(m => ({ ...m, read: !!m.read }));
+        res.json({ message: "success", data });
     } catch (err) { logError(err); res.status(400).json({ "error": err.message }); }
 });
 
@@ -454,10 +472,71 @@ app.post('/api/messages', async (req, res) => {
     const { name, email, message } = req.body;
     try {
         await run(
-            "INSERT INTO messages (name, email, message, date) VALUES (?, ?, ?, ?)",
+            "INSERT INTO messages (name, email, message, date, read) VALUES (?, ?, ?, ?, 0)",
             [name, email, message, new Date().toISOString()]
         );
         res.json({ message: "success" });
+    } catch (err) { logError(err); res.status(400).json({ "error": err.message }); }
+});
+
+app.put('/api/messages/:id/read', async (req, res) => {
+    const { read } = req.body;
+    try {
+        await run("UPDATE messages SET read = ? WHERE id = ?", [read ? 1 : 0, req.params.id]);
+        res.json({ message: "success" });
+    } catch (err) { logError(err); res.status(400).json({ "error": err.message }); }
+});
+
+app.delete('/api/messages/:id', async (req, res) => {
+    try {
+        await run("DELETE FROM messages WHERE id = ?", [req.params.id]);
+        res.json({ message: "deleted" });
+    } catch (err) { logError(err); res.status(400).json({ "error": err.message }); }
+});
+
+// --- REVIEWS ---
+app.post('/api/reviews', async (req, res) => {
+    const { product_id, user_name, user_email, rating, comment } = req.body;
+    try {
+        const result = await run(
+            "INSERT INTO reviews (product_id, user_name, user_email, rating, comment, approved, created_at) VALUES (?, ?, ?, ?, ?, 0, ?)",
+            [product_id, user_name, user_email || null, rating, comment, new Date().toISOString()]
+        );
+        res.json({ message: "success", id: result.lastID });
+    } catch (err) { logError(err); res.status(400).json({ "error": err.message }); }
+});
+
+app.get('/api/reviews/product/:productId', async (req, res) => {
+    try {
+        const reviews = await query("SELECT * FROM reviews WHERE product_id = ? AND approved = 1 ORDER BY created_at DESC", [req.params.productId]);
+        res.json({ message: "success", data: reviews });
+    } catch (err) { logError(err); res.status(400).json({ "error": err.message }); }
+});
+
+app.get('/api/reviews/pending', async (req, res) => {
+    try {
+        const reviews = await query(`
+            SELECT r.*, p.name as product_name 
+            FROM reviews r 
+            LEFT JOIN products p ON r.product_id = p.id 
+            WHERE r.approved = 0 
+            ORDER BY r.created_at DESC
+        `);
+        res.json({ message: "success", data: reviews });
+    } catch (err) { logError(err); res.status(400).json({ "error": err.message }); }
+});
+
+app.put('/api/reviews/:id/approve', async (req, res) => {
+    try {
+        await run("UPDATE reviews SET approved = 1 WHERE id = ?", [req.params.id]);
+        res.json({ message: "success" });
+    } catch (err) { logError(err); res.status(400).json({ "error": err.message }); }
+});
+
+app.delete('/api/reviews/:id', async (req, res) => {
+    try {
+        await run("DELETE FROM reviews WHERE id = ?", [req.params.id]);
+        res.json({ message: "deleted" });
     } catch (err) { logError(err); res.status(400).json({ "error": err.message }); }
 });
 
@@ -567,8 +646,15 @@ app.get('/api/wishlist/:sessionId', async (req, res) => {
 
 app.post('/api/wishlist', async (req, res) => {
     const { session_id, product_id } = req.body;
+    console.log(`[WISHLIST] Adding: session=${session_id}, product=${product_id}`);
     try {
+        const existing = await getOne("SELECT id FROM wishlist WHERE session_id = ? AND product_id = ?", [session_id, product_id]);
+        if (existing) {
+            console.log(`[WISHLIST] Found existing: id=${existing.id}`);
+            return res.json({ message: "success", id: existing.id, note: "Item already in wishlist" });
+        }
         const result = await run("INSERT INTO wishlist (session_id, product_id) VALUES (?, ?)", [session_id, product_id]);
+        console.log(`[WISHLIST] Inserted new: id=${result.lastID}`);
         res.json({ message: "success", id: result.lastID });
     } catch (err) {
         logError(err);
@@ -577,8 +663,10 @@ app.post('/api/wishlist', async (req, res) => {
 });
 
 app.delete('/api/wishlist/:id', async (req, res) => {
+    console.log(`[WISHLIST] Deleting id=${req.params.id}`);
     try {
         await run("DELETE FROM wishlist WHERE id = ?", [req.params.id]);
+        console.log(`[WISHLIST] Deleted id=${req.params.id}`);
         res.json({ message: "success" });
     } catch (err) {
         logError(err);
@@ -593,7 +681,7 @@ app.post('/api/upload', upload.single('image'), (req, res) => {
         if (!req.file) {
             return res.status(400).json({ error: 'No file uploaded' });
         }
-        const fileUrl = `http://localhost:${PORT}/uploads/${req.file.filename}`;
+        const fileUrl = `/uploads/${req.file.filename}`;
         res.json({ message: 'success', url: fileUrl });
     } catch (err) {
         logError(err);
