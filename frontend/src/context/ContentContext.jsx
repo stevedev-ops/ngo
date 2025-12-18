@@ -42,23 +42,45 @@ export const ContentProvider = ({ children }) => {
     useEffect(() => {
         const loadData = async () => {
             try {
-                // Parallel fetch for speed
+                // Helper to safe fetch
+                const safeFetch = async (fn, fallback = []) => {
+                    try {
+                        const res = await fn();
+                        return res || fallback;
+                    } catch (e) {
+                        console.error(`Fetch failed for ${fn.name}:`, e);
+                        return fallback;
+                    }
+                };
+
+                // Parallel fetch with individual error handling
                 const [p, g, s, t, j, h, c, progs, msg, rev, contact, stats, hHero, aHero] = await Promise.all([
-                    fetchProducts(), fetchGallery(), fetchStories(), fetchTeam(), fetchJourney(),
-                    fetchHomeProductIds(), fetchCategories(), fetchPrograms(), fetchMessages(), fetchPendingReviews(),
-                    fetchSettings('contact_info'), fetchSettings('impact_stats'), fetchSettings('home_hero'), fetchSettings('about_hero')
+                    safeFetch(fetchProducts, []),
+                    safeFetch(fetchGallery, []),
+                    safeFetch(fetchStories, []),
+                    safeFetch(fetchTeam, []),
+                    safeFetch(fetchJourney, []),
+                    safeFetch(fetchHomeProductIds, []),
+                    safeFetch(fetchCategories, []),
+                    safeFetch(fetchPrograms, []),
+                    safeFetch(fetchMessages, []),
+                    safeFetch(fetchPendingReviews, []),
+                    safeFetch(() => fetchSettings('contact_info'), null),
+                    safeFetch(() => fetchSettings('impact_stats'), null),
+                    safeFetch(() => fetchSettings('home_hero'), null),
+                    safeFetch(() => fetchSettings('about_hero'), null)
                 ]);
 
-                setAllProducts(p || []);
-                setGallery(g || []);
-                setStories(s || []);
-                setTeam(t || []);
-                setJourney(j || []);
-                setHomeProductIds(h || []);
-                setCategories(c || []);
-                setPrograms(progs || []);
-                setMessages(msg || []);
-                setPendingReviews(rev || []);
+                setAllProducts(p);
+                setGallery(g);
+                setStories(s);
+                setTeam(t);
+                setJourney(j);
+                setHomeProductIds(h);
+                setCategories(c);
+                setPrograms(progs);
+                setMessages(msg);
+                setPendingReviews(rev);
                 setSettings({
                     contact_info: contact,
                     impact_stats: stats,

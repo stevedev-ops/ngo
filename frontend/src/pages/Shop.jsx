@@ -36,10 +36,10 @@ const Shop = () => {
                 product.description.toLowerCase().includes(query);
 
             // 3. Price Range Filter
-            const price = product.price;
+            const price = parseFloat(product.price);
             const min = minPrice !== '' ? parseFloat(minPrice) : 0;
             const max = maxPrice !== '' ? parseFloat(maxPrice) : Infinity;
-            const matchesPrice = price >= min && price <= max;
+            const matchesPrice = !isNaN(price) && price >= min && price <= max;
 
             return matchesCategory && matchesSearch && matchesPrice;
         });
@@ -179,7 +179,18 @@ const Shop = () => {
                             </p>
                         </div>
 
-                        {filteredProducts.length === 0 ? (
+                        {allProducts.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center py-20 text-center">
+                                <span className="material-symbols-outlined text-6xl text-gray-300 mb-4">storefront</span>
+                                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">No products available yet</h3>
+                                <p className="text-gray-500 max-w-sm">
+                                    We are currently stocking our shelves. Please check back soon or
+                                    <Link to="/contact" className="text-primary hover:underline ml-1">contact us</Link> for inquiries.
+                                </p>
+                                {/* Hint for Admin (hidden in prod primarily, but useful for dev/admin user debugging) */}
+                                <p className="text-xs text-gray-400 mt-4 border-t pt-4">Admin? Add products in the Dashboard.</p>
+                            </div>
+                        ) : filteredProducts.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-20 text-center">
                                 <span className="material-symbols-outlined text-6xl text-gray-300 mb-4">search_off</span>
                                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">No products found</h3>
