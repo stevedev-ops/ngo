@@ -18,7 +18,7 @@ const endpoints = [
 
 async function checkEndpoint(path) {
     return new Promise((resolve) => {
-        http.get('http://localhost:3000' + path, (res) => {
+        http.get('http://localhost:3001' + path, (res) => {
             let data = '';
             res.on('data', chunk => data += chunk);
             res.on('end', () => {

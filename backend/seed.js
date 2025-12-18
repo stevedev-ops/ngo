@@ -184,9 +184,10 @@ const team = [
 ];
 
 const journey = [
-    { id: 1, year: "2010", title: "The Beginning", description: "Started with 5 volunteers in a small garage, delivering food to local shelters." },
-    { id: 2, year: "2015", title: "First School Built", description: "Expanded internationally to build our first sustainable education center in rural areas." },
-    { id: 3, year: "2023", title: "Global Impact", description: "Reached over 100,000 lives impacted across 12 countries. Launched our sustainable shop." }
+    { id: 1, year: "2013", title: "Inception", description: "Started STEM mentorship sessions in schools." },
+    { id: 2, year: "2018", title: "Formal Registration", description: "Formally registered as a Community Based Organization in Tharaka Nithi County." },
+    { id: 3, year: "2019", title: "Expansion", description: "Started education and economic empowerment activities in Tharaka Nithi County." },
+    { id: 4, year: "2020 - 2025", title: "Strategic Partnerships", description: "Implemented activities in Partnership with Akili Dada, KENDAT, CREAW, and the Swedish Embassy." }
 ];
 
 const programs = [
@@ -245,7 +246,10 @@ db.serialize(() => {
     db.run("DROP TABLE IF EXISTS journey");
     db.run("DROP TABLE IF EXISTS programs");
     db.run("DROP TABLE IF EXISTS messages");
+    db.run("DROP TABLE IF EXISTS reviews");
     db.run("DROP TABLE IF EXISTS settings");
+    db.run("DROP TABLE IF EXISTS orders");
+    db.run("DROP TABLE IF EXISTS wishlist");
 
     db.run(`CREATE TABLE products (
         id TEXT PRIMARY KEY,
@@ -308,7 +312,20 @@ db.serialize(() => {
         name TEXT,
         email TEXT,
         message TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        date TEXT,
+        read BOOLEAN DEFAULT 0
+    )`);
+
+    db.run(`CREATE TABLE reviews (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        product_id TEXT,
+        user_name TEXT,
+        user_email TEXT,
+        rating INTEGER,
+        comment TEXT,
+        approved INTEGER DEFAULT 0,
+        created_at TEXT,
+        FOREIGN KEY (product_id) REFERENCES products(id)
     )`);
 
     db.run(`CREATE TABLE orders (
