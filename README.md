@@ -1,16 +1,78 @@
-# React + Vite
+# NGO Project
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This project matches a React frontend with a Node.js/Express backend to create a full platform for the NGO.
 
-Currently, two official plugins are available:
+## Project Structure
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **frontend/**: React application built with Vite.
+- **backend/**: Node.js Express server using SQLite database.
 
-## React Compiler
+## Prerequisites
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- Node.js (v18 or higher recommended)
+- npm
 
-## Expanding the ESLint configuration
+## Setup & Installation
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### 1. Backend Setup
+
+The backend handles the API and database.
+
+```bash
+cd backend
+npm install
+```
+
+**Database Initialization:**
+Before running the server, you need to seed the database (this creates tables and adds initial data).
+
+```bash
+node seed.js
+```
+
+### 2. Frontend Setup
+
+The frontend is the user interface.
+
+```bash
+cd frontend
+# Install dependencies (use --legacy-peer-deps to resolve react-paystack conflict)
+npm install --legacy-peer-deps
+```
+
+## Running the Application
+
+You need to run both the backend and frontend simultaneously (in separate terminal windows).
+
+### Start Backend
+
+Runs on `http://localhost:3001`
+
+```bash
+cd backend
+node server.js
+```
+
+### Start Frontend
+
+Runs on `http://localhost:5173` (typically)
+
+```bash
+cd frontend
+npm run dev
+```
+
+## API Verification
+
+You can verify the backend endpoints are working correctly by running the verification script in the backend directory:
+
+```bash
+cd backend
+node verify_all_endpoints.js
+```
+
+## Troubleshooting
+
+- **Database Errors**: If you see "no such table" errors, make sure you ran `node seed.js` in the backend folder.
+- **Frontend Dependencies**: If `npm install` fails in the frontend, ensure you are using `--legacy-peer-deps`.
+- **Port Conflicts**: Ensure ports 3001 (backend) and 5173 (frontend) are free.

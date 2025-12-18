@@ -4,7 +4,7 @@ import { useCart } from '../context/CartContext';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { usePaystackPayment } from 'react-paystack';
-import { checkout, createOrder } from '../api';
+import { checkout, createOrder, getImageUrl } from '../api';
 import { useContent } from '../context/ContentContext';
 
 // Initialize Stripe with env variable or placeholder
@@ -260,7 +260,7 @@ const CheckoutContent = () => {
                             return (
                                 <div key={item.id} className="flex gap-4 items-center">
                                     <div className="relative size-16 rounded-lg border border-border-light dark:border-border-dark bg-white dark:bg-background-dark overflow-hidden">
-                                        <img alt={item.name} className="w-full h-full object-cover" src={item.images[0]} />
+                                        <img alt={item.name} className="w-full h-full object-cover" src={getImageUrl(item.images[0])} />
                                         <span className="absolute -top-2 -right-2 size-5 rounded-full bg-slate-500 text-white text-xs font-bold flex items-center justify-center">{item.quantity}</span>
                                     </div>
                                     <div className="flex-1">

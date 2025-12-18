@@ -753,3 +753,29 @@
     at handle (D:\ngo\backend\node_modules\router\index.js:435:11)
     at Layer.handleRequest (D:\ngo\backend\node_modules\router\lib\layer.js:152:17)
 ----------------------------------------
+[2025-12-17T08:14:03.846Z] Error: SQLITE_ERROR: no such column: date
+--> in Database#all('SELECT * FROM messages ORDER BY date DESC', [], [Function (anonymous)])
+    at /home/steve/ngo/ngo/ngo/backend/server.js:74:12
+    at new Promise (<anonymous>)
+    at query (/home/steve/ngo/ngo/ngo/backend/server.js:73:12)
+    at /home/steve/ngo/ngo/ngo/backend/server.js:448:32
+    at Layer.handleRequest (/home/steve/ngo/ngo/ngo/backend/node_modules/router/lib/layer.js:152:17)
+    at next (/home/steve/ngo/ngo/ngo/backend/node_modules/router/lib/route.js:157:13)
+    at Route.dispatch (/home/steve/ngo/ngo/ngo/backend/node_modules/router/lib/route.js:117:3)
+    at handle (/home/steve/ngo/ngo/ngo/backend/node_modules/router/index.js:435:11)
+    at Layer.handleRequest (/home/steve/ngo/ngo/ngo/backend/node_modules/router/lib/layer.js:152:17)
+----------------------------------------
+[2025-12-17T18:59:01.762Z] Error: ENOENT: no such file or directory, open 'uploads/image-1765997941740-170277829.png'
+----------------------------------------
+[2025-12-17T18:59:09.973Z] Error: ENOENT: no such file or directory, open 'uploads/image-1765997949968-144551127.png'
+----------------------------------------
+[2025-12-17T19:02:18.546Z] Error: ENOENT: no such file or directory, open 'uploads/image-1765998138520-56973305.png'
+----------------------------------------
+[2025-12-17T19:02:24.874Z] Error: ENOENT: no such file or directory, open 'uploads/image-1765998144867-489832953.png'
+----------------------------------------
+[2025-12-17T19:03:53.738Z] Error: ENOENT: no such file or directory, open 'uploads/image-1765998233733-132846632.png'
+----------------------------------------
+[2025-12-17T19:07:06.973Z] Error: ENOENT: no such file or directory, open 'uploads/image-1765998426970-247181103.png'
+----------------------------------------
+[2025-12-17T19:07:41.146Z] Error: ENOENT: no such file or directory, open 'uploads/image-1765998461142-462046792.png'
+----------------------------------------
